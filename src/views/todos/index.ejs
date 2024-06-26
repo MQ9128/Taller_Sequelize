@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todos</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/styles.css">  
+</head>
+<style>
+     @import url('https://fonts.googleapis.com/css2?family=Poetsen+One&display=swap');
+        body {
+            font-family: 'Poetsen One', sans-serif !important;
+        }
+
+    body {
+        /* Cambiar el fondo a una imagen o un color sólido */
+        background-color: #f8f9fa; /* Ejemplo de color de fondo */
+        /* background-image: url('ruta/a/tu/imagen.jpg'); */ /* Ejemplo de imagen de fondo */
+        font-family: 'Arial', sans-serif; /* Ejemplo de tipo de letra */
+    }
+
+    h1.display-4 {
+        color: #007bff; /* Color azul para el título principal */
+    }
+
+    .card-header {
+        background-color: #007bff; /* Color de fondo para los encabezados de tarjeta */
+        color: #fff; /* Color de texto para los encabezados de tarjeta */
+    }
+
+    .btn-primary {
+        background-color: #007bff; /* Color de fondo para botones primarios */
+        border-color: #007bff; /* Color de borde para botones primarios */
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3; /* Color de fondo al pasar el ratón por encima */
+        border-color: #0056b3; /* Color de borde al pasar el ratón por encima */
+    }
+
+    .badge-success,
+    .badge-secondary {
+        color: #000000; /* Color negro para el texto */
+    }
+
+    .badge-success {
+        color: #155724; /* Verde más claro */
+        background-color: #d5edd4; /* Fondo verde más claro */
+    }
+
+    .badge-secondary {
+        color: #383d41; /* Gris más claro */
+        background-color: #e2e3e5; /* Fondo gris más claro */
+    }
+</style>
+<body>
+    <div class="container">
+        <div class="text-center mb-4">
+            <h1 class="display-4">Lista de Tareas</h1>
+        </div>
+    <div class="container mt-5">
+        <!-- Formulario para agregar tarea -->
+        <div class="card">
+            <div class="card-header">
+                Agregar Tarea
+            </div>
+            <div class="card-body">
+                <form action="/api/v1/todos/panel" method="POST">
+                    <div class="form-group">
+                        <label for="title">Título:</label>
+                        <input type="text" id="title" name="title" class="form-control" required>
+                    </div>
+                    <div class="form-group form-check">
+                        <input type="checkbox" id="completed" name="completed" class="form-check-input">
+                        <label for="completed" class="form-check-label">Completado</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Agregar tarea</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Listado de tareas -->
+        <div class="card mt-3">
+            <div class="card-header">
+                Tareas
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <% todos.forEach(function(todo) { %>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span id="todo-title-<%= todo.id %>"><%= todo.title %></span>
+                            <span id="todo-status-<%= todo.id %>" class="badge badge-pill <%= todo.completed ? 'badge-success' : 'badge-secondary' %>">
+                                <%= todo.completed ? 'Completado' : 'Pendiente' %>
+                            </span>
+                            <div>
+                                <!-- Botón para editar tarea -->
+                                <button type="button" class="btn btn-sm btn-warning mr-1" onclick="editTodo('<%= todo.id %>', '<%= todo.title %>', '<%= todo.completed %>')">Editar</button>
+                                <!-- Botón para eliminar tarea -->
+                                <button type="button" class="btn btn-sm btn-danger delete-button" onclick="deleteTodo('<%= todo.id %>')">Eliminar</button>
+                            </div>
+                        </li>
+                    <% }); %>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar tarea -->
+<div class="modal fade" id="editTodoModal" tabindex="-1" role="dialog" aria-labelledby="editTodoModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editTodoModalLabel">Editar Tarea</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editTodoForm" method="POST">
+                    <input type="hidden" name="_method" value="PUT">
+                    <div class="form-group">
+                        <label for="editTitle">Título</label>
+                        <input type="text" class="form-control" id="editTitle" name="title" required>
+                    </div>
+                    <div class="form-group form-check">
+                        <input type="checkbox" class="form-check-input" id="editCompleted" name="completed">
+                        <label class="form-check-label" for="editCompleted">Completado</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Actualizar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <!-- jQuery, Popper.js, Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        // Función para manejar la eliminación de una tarea
+        function deleteTodo(id) {
+            // Mostrar SweetAlert para confirmar la eliminación
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: '¡No podrás revertir esto!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, eliminarlo!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Enviar solicitud DELETE al servidor
+                    $.ajax({
+                        url: `/api/v1/todos/panel/${id}`,
+                        method: 'DELETE',
+                        success: function(response) {
+                            // Mostrar mensaje de éxito con SweetAlert
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Bien hecho!',
+                                text: 'La tarea se ha eliminado correctamente.'
+                            }).then(() => {
+                                // Recargar la página o actualizar la lista de tareas
+                                location.reload(); // Por ejemplo, puedes recargar la página
+                            });
+                        },
+                        error: function(xhr) {
+                            // Mostrar mensaje de error con SweetAlert
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'No se pudo eliminar la tarea. Inténtalo de nuevo más tarde.'
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+// Función para cargar datos de la tarea en el modal de edición
+function editTodo(id, title, completed) {
+    document.getElementById('editTodoForm').action = '/api/v1/todos/panel/' + id;
+    document.getElementById('editTitle').value = title;
+    document.getElementById('editCompleted').checked = completed === 'true' || completed === true; // Asegurar que el valor booleano sea interpretado correctamente
+    $('#editTodoModal').modal('show');
+}
+
+// Manejar el envío del formulario de edición mediante AJAX
+$(document).ready(function() {
+    $('#editTodoForm').on('submit', function(event) {
+        event.preventDefault();
+        const id = this.action.split('/').pop();
+        const title = $('#editTitle').val();
+        const completed = $('#editCompleted').prop('checked') ? 'on' : 'off';
+        $.ajax({
+            url: this.action,
+            method: 'PUT',
+            data: {
+                title: title,
+                completed: completed
+            },
+            success: function(response) {
+                $('#editTodoModal').modal('hide');
+                $('#todo-title-' + id).text(title);
+
+                const statusBadge = $('#todo-status-' + id);
+                statusBadge.removeClass('badge-success badge-secondary');
+                if (completed === 'on') {
+                    statusBadge.addClass('badge-success');
+                    statusBadge.text('Completado');
+                } else {
+                    statusBadge.addClass('badge-secondary');
+                    statusBadge.text('Pendiente');
+                }
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Bien hecho!',
+                    text: 'La tarea se ha actualizado correctamente.'
+                });
+            },
+            error: function(xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo actualizar la tarea. Inténtalo de nuevo más tarde.'
+                });
+            }
+        });
+    });
+});
+
+    </script>
+</body>
+</html>
+
+
