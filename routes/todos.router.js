@@ -47,9 +47,11 @@ router.get('/:id', async (req, res) => {
 // Update
 router.put('/:id', async (req, res) => {
     try {
+        const { title, completed } = req.body;
+
         const [updated] = await Todo.update({
-            title: req.body.title,
-            completed: completed === 'on'
+            title: title,
+            completed: completed =='on' || completed === true
         }, {
             where: { id: req.params.id }
         });
